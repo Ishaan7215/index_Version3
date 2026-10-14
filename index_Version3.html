@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Chat App — Simple</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --panel:#0b1220;
+      --muted:#94a3b8;
+      --accent:#06b6d4;
+      --card:#0b1224;
+      --glass: rgba(255,255,255,0.03);
+      --success:#10b981;
+      --danger:#ef4444;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg,#071126 0%, #07111a 60%, #021018 100%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
+
+    .app {
+      width:100%;
+      max-width:980px;
+      min-height:560px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      box-shadow: 0 10px 40px rgba(2,6,23,0.7);
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      overflow:hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      padding:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+      border-right:1px solid rgba(255,255,255,0.03);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .brand {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .logo {
+      width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:grid;place-items:center;font-weight:700;color:#021018;
+    }
+    h1{font-size:16px;margin:0}
+    .muted {color:var(--muted); font-size:12px}
+
+    .control {
+      background:var(--card);
+      border-radius:10px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    label {font-size:12px;color:var(--muted); display:block; margin-bottom:6px}
+    input[type="text"], input[type="password"], select, textarea {
+      width:100%;
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.04);
+      background:transparent;
+      color:inherit;
+      outline:none;
+      font-size:13px;
+    }
+
+    .row {display:flex; gap:8px}
+    .btn {
+      background:var(--accent);
+      color:#021018;
+      border:none;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:13px;
+    }
+    .btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); }
+    .btn.warn { background:var(--danger); color:white; }
+
+    .small {font-size:12px;color:var(--muted)}
+
+    /* Chat area */
+    .chat {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:18px;
+      min-height:560px;
+    }
+
+    .messages {
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+      border-radius:10px;
+      padding:14px;
+      height:100%;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .msg {
+      max-width:78%;
+      padding:12px 14px;
+      border-radius:10px;
+      line-height:1.4;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+    }
+    .msg.user { align-self:flex-end; background:linear-gradient(180deg,#0ea5a5,#06b6d4); color:#021018; border-bottom-right-radius:4px;}
+    .msg.ai   { align-self:flex-start; background:var(--glass); color:var(--muted); border-bottom-left-radius:4px; }
+
+    .meta { font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+    .footer {
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .input {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-top:6px;
+    }
+
+    textarea#prompt {
+      resize:none;
+      border-radius:10px;
+      padding:12px;
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.04);
+      color:inherit;
+      font-size:14px;
+      min-height:56px;
+      flex:1;
+    }
+
+    .settings {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:8px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .chips { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip {
+      background:rgba(255,255,255,0.02);
+      padding:6px 8px;
+      border-radius:8px;
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .top-actions { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    .spacer { flex:1 }
+    .hint { font-size:12px; color:var(--muted); }
+    .small-muted { font-size:12px; color:var(--muted) }
+
+    /* Responsive */
+    @media (max-width:880px){
+      .app { grid-template-columns: 1fr; max-width:720px; }
+      .sidebar { order:2 }
+      .chat { order:1; min-height:420px }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Simple AI Chat App (single-file)
+    - Save as index.html and open in browser.
+    - This app calls OpenAI's Chat Completions API. Provide your API key below.
+    - Warning: Don't paste long-lived secrets on public/shared machines.
+  -->
+
+  <div class="app" role="application" aria-label="AI chat app">
+    <aside class="sidebar" aria-label="Settings and controls">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+          <h1>Simple AI App</h1>
+          <div class="muted">Client-side chat with OpenAI API</div>
+        </div>
+      </div>
+
+      <div class="control">
+        <label for="apiKey">OpenAI API Key</label>
+        <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+        <div class="row">
+          <button id="saveKeyBtn" class="btn">Save key</button>
+          <button id="clearKeyBtn" class="btn ghost">Clear</button>
+        </div>
+        <div class="small-muted">Your API key is stored only in your browser (localStorage) if you save it.</div>
+      </div>
+
+      <div class="control">
+        <label for="model">Model</label>
+        <select id="model">
+          <option value="gpt-4">gpt-4</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="gpt-3.5-turbo" selected>gpt-3.5-turbo</option>
+        </select>
+
+        <label for="temperature">Temperature: <span id="tempVal">0.2</span></label>
+        <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.2" />
+
+        <label for="systemPrompt">System prompt (optional)</label>
+        <textarea id="systemPrompt" placeholder="You are a helpful assistant..." rows="3"></textarea>
+
+        <div class="row">
+          <button id="newConv" class="btn ghost">New conversation</button>
+          <button id="download" class="btn">Download</button>
+        </div>
+      </div>
+
+      <div style="margin-top:auto" class="small-muted">
+        Tips:
+        <div class="chips" style="margin-top:8px;">
+          <div class="chip">Use a real OpenAI API key</div>
+          <div class="chip">Keep prompts short</div>
+          <div class="chip">This app runs entirely in your browser</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="chat" aria-label="Chat area">
+      <div class="top-actions">
+        <div class="meta">
+          <strong id="convName">Conversation</strong>
+          <span class="muted"> — interactive chat</span>
+        </div>
+        <div>
+          <button id="stopBtn" class="btn ghost" style="display:none">Stop</button>
+          <button id="clearBtn" class="btn ghost">Clear messages</button>
+        </div>
+      </div>
+
+      <div id="messages" class="messages" role="log" aria-live="polite"></div>
+
+      <div class="input" role="region" aria-label="Message composer">
+        <textarea id="prompt" placeholder="Type your message and press Enter (Shift+Enter for newline)"></textarea>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="sendBtn" class="btn">Send</button>
+          <button id="exampleBtn" class="btn ghost">Example</button>
+        </div>
+      </div>
+
+      <div class="settings">
+        <div class="small-muted">Model: <span id="currentModel">gpt-3.5-turbo</span></div>
+        <div class="small-muted">Temperature: <span id="currentTemp">0.2</span></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Simple AI chat single-file app
+    // NOTE: This uses fetch to call OpenAI. You must provide a valid API key.
+
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const clearKeyBtn = document.getElementById('clearKeyBtn');
+    const modelSelect = document.getElementById('model');
+    const tempRange = document.getElementById('temperature');
+    const tempVal = document.getElementById('tempVal');
+    const systemPromptEl = document.getElementById('systemPrompt');
+    const messagesEl = document.getElementById('messages');
+    const promptEl = document.getElementById('prompt');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const newConvBtn = document.getElementById('newConv');
+    const downloadBtn = document.getElementById('download');
+    const exampleBtn = document.getElementById('exampleBtn');
+    const currentModel = document.getElementById('currentModel');
+    const currentTemp = document.getElementById('currentTemp');
+    const stopBtn = document.getElementById('stopBtn');
+    const convName = document.getElementById('convName');
+
+    let messages = []; // conversation messages for API
+    let loading = false;
+    let abortController = null;
+
+    // Load saved key if present
+    (function init() {
+      const saved = localStorage.getItem('simple_ai_key_v1');
+      if (saved) apiKeyInput.value = saved;
+      const lastModel = localStorage.getItem('simple_ai_model');
+      if (lastModel) modelSelect.value = lastModel;
+      const lastTemp = localStorage.getItem('simple_ai_temp');
+      if (lastTemp) { tempRange.value = lastTemp; tempVal.textContent = lastTemp; currentTemp.textContent = lastTemp; }
+      const sys = localStorage.getItem('simple_ai_system');
+      if (sys) systemPromptEl.value = sys;
+      updateModelDisplay();
+      renderWelcome();
+    })();
+
+    function renderWelcome(){
+      appendAi("Hello — I'm your local AI chat UI. Paste an OpenAI API key in the sidebar and press Send. Example: Ask me to summarize a web page, brainstorm, or write code.");
+    }
+
+    function appendUser(text){
+      const el = document.createElement('div');
+      el.className = 'msg user';
+      el.textContent = text;
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function appendAi(text){
+      const el = document.createElement('div');
+      el.className = 'msg ai';
+      el.textContent = text;
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderMessagesFromHistory(){
+      messagesEl.innerHTML = '';
+      for (const m of messages){
+        const el = document.createElement('div');
+        el.className = 'msg ' + (m.role === 'user' ? 'user' : 'ai');
+        el.textContent = m.content;
+        messagesEl.appendChild(el);
+      }
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function pushMessage(role, content){
+      messages.push({role, content});
+    }
+
+    sendBtn.addEventListener('click', () => handleSend());
+    promptEl.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      const key = apiKeyInput.value.trim();
+      if (!key) { alert('Type your OpenAI API key first.'); return; }
+      localStorage.setItem('simple_ai_key_v1', key);
+      alert('API key saved to localStorage (only in this browser).');
+    });
+
+    clearKeyBtn.addEventListener('click', () => {
+      apiKeyInput.value = '';
+      localStorage.removeItem('simple_ai_key_v1');
+      alert('Key cleared.');
+    });
+
+    modelSelect.addEventListener('change', () => {
+      localStorage.setItem('simple_ai_model', modelSelect.value);
+      updateModelDisplay();
+    });
+
+    tempRange.addEventListener('input', () => {
+      tempVal.textContent = tempRange.value;
+      currentTemp.textContent = tempRange.value;
+      localStorage.setItem('simple_ai_temp', tempRange.value);
+    });
+
+    systemPromptEl.addEventListener('change', () => {
+      localStorage.setItem('simple_ai_system', systemPromptEl.value);
+    });
+
+    exampleBtn.addEventListener('click', () => {
+      promptEl.value = "Give me a short plan for a 30-minute workout at home with no equipment.";
+      promptEl.focus();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      messages = [];
+      messagesEl.innerHTML = '';
+      renderWelcome();
+    });
+
+    newConvBtn.addEventListener('click', () => {
+      messages = [];
+      messagesEl.innerHTML = '';
+      convName.textContent = 'Conversation';
+      renderWelcome();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const transcript = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}\n`).join('\n');
+      const blob = new Blob([transcript], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'conversation.txt'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (abortController) abortController.abort();
+      loading = false;
+      stopBtn.style.display = 'none';
+    });
+
+    function updateModelDisplay(){
+      currentModel.textContent = modelSelect.value;
+    }
+
+    async function handleSend(){
+      if (loading) return;
+      const userText = promptEl.value.trim();
+      if (!userText) return;
+
+      const key = apiKeyInput.value.trim();
+      if (!key) { alert('Please paste your OpenAI API key in the sidebar.'); return; }
+
+      // Append to UI and conversation state
+      appendUser(userText);
+      pushMessage('user', userText);
+
+      // If system prompt exists and it's the first user message, ensure system message is present
+      if (messages.length === 1 && systemPromptEl.value.trim()){
+        messages.unshift({role:'system', content: systemPromptEl.value.trim()});
+      }
+
+      promptEl.value = '';
+      loading = true;
+      stopBtn.style.display = 'inline-block';
+
+      try {
+        const model = modelSelect.value;
+        const temperature = parseFloat(tempRange.value);
+
+        // Compose API payload
+        const payload = {
+          model,
+          messages,
+          temperature,
+          max_tokens: 800,
+        };
+
+        // Use AbortController to allow cancellation
+        abortController = new AbortController();
+
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify(payload),
+          signal: abortController.signal,
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          appendAi('Error: ' + res.status + ' — ' + errText);
+          loading = false;
+          stopBtn.style.display = 'none';
+          return;
+        }
+
+        const data = await res.json();
+        // Basic handling: choose first choice
+        const content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'No response';
+        appendAi(content);
+        pushMessage('assistant', content);
+
+        // update conversation name to first user message snippet
+        convName.textContent = (messages.find(m => m.role === 'user')?.content || 'Conversation').slice(0,30).replace(/\n/g,' ');
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          appendAi('[Generation aborted]');
+        } else {
+          appendAi('Network error: ' + (err.message || String(err)));
+        }
+      } finally {
+        loading = false;
+        stopBtn.style.display = 'none';
+        abortController = null;
+      }
+    }
+
+    // Small accessibility: focus prompt on load
+    promptEl.focus();
+
+    // Keyboard shortcut: Cmd/Ctrl+K to focus prompt
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        promptEl.focus();
+      }
+    });
+
+    // Simple local storage autosave for small session state
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('simple_ai_messages', JSON.stringify(messages.slice(-20))); // keep last 20
+    });
+
+    // Try to restore recent messages
+    (function restoreHistory(){
+      try {
+        const raw = localStorage.getItem('simple_ai_messages');
+        if (!raw) return;
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return;
+        messages = arr;
+        renderMessagesFromHistory();
+      } catch(e){}
+    })();
+
+  </script>
+</body>
+</html>
